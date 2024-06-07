@@ -6,6 +6,8 @@ networks:
 
 # This is how you persist data between container restarts
 volumes:
+  mongo_conf:
+    driver: local
   mongo_data:
     driver: local
   log_data:
@@ -19,7 +21,8 @@ services:
     image: mongo:6.0.5-jammy
     container_name: mongodb
     volumes:
-      - "mongo_data:/data/db"
+      - mongo_conf:/data/configdb
+      - mongo_data:/data/db
     networks:
       - graynet
     restart: unless-stopped
@@ -63,25 +66,28 @@ services:
       GRAYLOG_HTTP_EXTERNAL_URI: "http://localhost:9000/"
       GRAYLOG_ELASTICSEARCH_HOSTS: "http://opensearch:9200"
       GRAYLOG_MONGODB_URI: "mongodb://mongodb:27017/graylog"
-      GRAYLOG_TIMEZONE: "America/Detroit"
-      TZ: "America/Detroit"
+      GRAYLOG_TIMEZONE: "Europe/Paris"
+      TZ: "Europe/Paris"
       GRAYLOG_TRANSPORT_EMAIL_PROTOCOL: "smtp"
-      GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL: "http://192.168.3.233:9000/"
-      GRAYLOG_TRANSPORT_EMAIL_HOSTNAME: "outbound.mailhop.org"
+      GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL: "http://localhost:9000/"
+      GRAYLOG_TRANSPORT_EMAIL_HOSTNAME: "smtp.centile.com"
       GRAYLOG_TRANSPORT_EMAIL_ENABLED: "true"
-      GRAYLOG_TRANSPORT_EMAIL_PORT: "587"
-      GRAYLOG_TRANSPORT_EMAIL_USE_AUTH: "true"
-      GRAYLOG_TRANSPORT_EMAIL_AUTH_USERNAME: "xxxxx"
-      GRAYLOG_TRANSPORT_EMAIL_AUTH_PASSWORD: "xxxxx"
-      GRAYLOG_TRANSPORT_EMAIL_USE_TLS: "true"
-      GRAYLOG_TRANSPORT_EMAIL_USE_SSL: "false"
-      GRAYLOG_TRANSPORT_FROM_EMAIL: "graylog@example.com"
+      GRAYLOG_TRANSPORT_EMAIL_PORT: "25"
+      # GRAYLOG_TRANSPORT_EMAIL_USE_AUTH: "true"
+      # GRAYLOG_TRANSPORT_EMAIL_AUTH_USERNAME: "xxxxx"
+      # GRAYLOG_TRANSPORT_EMAIL_AUTH_PASSWORD: "xxxxx"
+      # GRAYLOG_TRANSPORT_EMAIL_USE_TLS: "true"
+      # GRAYLOG_TRANSPORT_EMAIL_USE_SSL: "false"
+      GRAYLOG_TRANSPORT_FROM_EMAIL: "noreply-graylog@centile.com"
       GRAYLOG_TRANSPORT_SUBJECT_PREFIX: "[graylog]"
+      GRAYLOG_CONTENT_PACKS_LOADER_ENABLED: "true"
+      GRAYLOG_CONTENT_PACKS_AUTO_INSTALL: "standard-gelf-inputs.json"
 
     entrypoint: /usr/bin/tini -- wait-for-it opensearch:9200 -- /docker-entrypoint.sh
     volumes:
       - "${PWD}/config/graylog/graylog.conf:/usr/share/graylog/config/graylog.conf"
       - "graylog_data:/usr/share/graylog/data"
+      - "${PWD}/config/graylog/packs:/usr/share/graylog/data/contentpacks"
     networks:
       - graynet
     restart: always
